@@ -7,6 +7,8 @@ Since we are only working with the flower framework (At the time of writing this
 - Torch
 - Torchvision
 - flwr
+- matplotlib
+- pfl[torch]
 
 *IMPORTANT*: In order to install `pfl`, the required Python version is 3.10.
 
