@@ -13,6 +13,10 @@ Since we are only working with the flower framework (At the time of writing this
 
 *IMPORTANT*: In order to install `pfl`, the required Python version is 3.10.
 
+
+# Technical problems and solutions
+
+## matplotlib import errors
 You might run into issues with importing `matplotlib.pyplot` due to following error `ImportError: cannot import name '_imaging' from 'PIL'`. To solve this, enter the following in the shell:
 ```
 pip uninstall PIL
@@ -20,3 +24,13 @@ pip uninstall Pillow
 pip install Pillow
 ```
 Source: https://stackoverflow.com/questions/64998199/cannot-import-name-imaging-from-pil
+
+## torchvision import errors
+If you get any kind of import error related to the `torchvision` module, try run the following in shell:
+```
+pip uninstall torchvision
+pip cache purge
+pip install torchvision
+```
+
+Then restart the editor.
