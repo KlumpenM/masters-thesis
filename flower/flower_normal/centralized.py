@@ -68,9 +68,7 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
         return batch
 
     partition_train_test = partition_train_test.with_transform(apply_transforms)
-    trainloader = DataLoader(
-        partition_train_test["train"], batch_size=batch_size, shuffle=True
-    )
+    trainloader = DataLoader(partition_train_test["train"], batch_size=batch_size, shuffle=True)
     testloader = DataLoader(partition_train_test["test"], batch_size=batch_size)
     return trainloader, testloader
 
@@ -107,7 +105,7 @@ def test(net, testloader, device):
         for batch in testloader:
             images = batch["img"].to(device)
             labels = batch["label"].to(device)
-            outputs = net(images)
+            outputs = net(images.to(device))
             loss += criterion(outputs, labels).item()
             correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
     accuracy = correct / len(testloader.dataset)

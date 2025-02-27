@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "flower_normal"
+name = "flower_DP"
 version = "1.0.0"
-description = "Federated Learning with PyTorch and Flower (Quickstart Example)"
+description = "Central Differential Privacy and Secure Aggregation in Flower"
 license = "Apache-2.0"
 dependencies = [
     "flwr[simulation]>=1.15.2",
@@ -21,23 +21,20 @@ packages = ["."]
 publisher = "flwrlabs"
 
 [tool.flwr.app.components]
-serverapp = "flower_normal.server:app"
-clientapp = "flower_normal.client:app"
+serverapp = "flower_DP.server:app"
+clientapp = "flower_DP.client:app"
 
 [tool.flwr.app.config]
-num-server-rounds = 3
-fraction-evaluate = 0.5
-local-epochs = 1
-learning-rate = 0.1
-batch-size = 32
+# Parameters for the DP
+noise-multiplier = 0.2
+clipping-norm = 10
+num-sampled-clients = 20
+# Parameters for the SecAgg+ protocol
+num-shares = 7
+reconstruction-threshold = 4
 
 [tool.flwr.federations]
-default = "local-simulation"
-
-[tool.flwr.federations.local-simulation]
-options.num-supernodes = 10
+default = "local-simulation-gpu"
 
 [tool.flwr.federations.local-simulation-gpu]
-options.num-supernodes = 10
-options.backend.client-resources.num-cpus = 2 # each ClientApp assumes to use 2CPUs
-options.backend.client-resources.num-gpus = 0.2 # at most 5 ClientApp will run in a given GPU
+options.num-supernodes = 100
