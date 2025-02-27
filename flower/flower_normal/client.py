@@ -1,47 +1,60 @@
-# Import the necessary libraries
-from centralized import load_data, load_model, train, test
-from collections import OrderedDict
-import flwr as fl # Import the Flower library
+"""flower_normal: A Flower / PyTorch app."""
+
 import torch
+from flwr.client import ClientApp, NumPyClient
+from flwr.common import Context
+
+import sys
+sys.path.append('../flower/flower_normal')
+from centralized import Net, get_weights, load_data, set_weights, test, train
 
 
-"""
-Utility function to set the hyperparameters of the model
-Since we need to update the parameters (built-in in TensorFlow)
-"""
-def set_parameters(model, parameters):
-    # Get the dictionary of the model's state, and the keys.
-    # We are zipping it, with the updated parameters
-    params_dict = zip(model.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-    # We are setting the strict to True, since the model should always have the same parameters and shape.
-    model.load_state_dict(state_dict, strict=True)
+# Define Flower Client
+class FlowerClient(NumPyClient):
+    def __init__(self, trainloader, valloader, local_epochs, learning_rate):
+        self.net = Net()
+        self.trainloader = trainloader
+        self.valloader = valloader
+        self.local_epochs = local_epochs
+        self.lr = learning_rate
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
-net = load_model() # Load the model
-train_set, test_set = load_data() # Load the data
-
-class FlowerClient(fl.client.NumPyClient):
-    # We need to write this function our self, since it isn't implemented in pytorch
-    def get_parameters(self, config):
-        # We are returning the parameters of the model
-        # We are converting them to numpy arrays, and returning them
-        return [val.cpu().numpy() for _, val in net.state_dict().items()]
-    
     def fit(self, parameters, config):
-        # Setting the parameters, to the paramters we've received from the server
-        set_parameters(net, parameters)
-        train(net, train_set, epochs=1) # Train the model for 1 epoch (can be adjusted)
-        # If we want to define a metric, we should define it in the TRAIN function
-        return self.get_parameters({}), len(train_set.dataset), {} # Return the parameters, the number of samples, and an metric (empty for now)
-    
-    def evaluate(self, parameters, config):
-        set_parameters(net, parameters) # Set the parameters given from the server
-        loss, accuracy = test(net, test_set) # Test the model
-        return float(loss), len(test_set.dataset), {"accuracy": float(accuracy)} # Return the loss, the number of samples, and the accuracy
-    
+        """Train the model with data of this client."""
+        set_weights(self.net, parameters)
+        results = train(
+            self.net,
+            self.trainloader,
+            self.valloader,
+            self.local_epochs,
+            self.lr,
+            self.device,
+        )
+        return get_weights(self.net), len(self.trainloader.dataset), results
 
-fl.client.start_numpy_client(
-    server_address="127.0.0.1:8080",
-    client=FlowerClient(),
-) # Start the client
+    def evaluate(self, parameters, config):
+        """Evaluate the model on the data this client has."""
+        set_weights(self.net, parameters)
+        loss, accuracy = test(self.net, self.valloader, self.device)
+        return loss, len(self.valloader.dataset), {"accuracy": accuracy}
+
+
+def client_fn(context: Context):
+    """Construct a Client that will be run in a ClientApp."""
+
+    # Read the node_config to fetch data partition associated to this node
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+
+    # Read run_config to fetch hyperparameters relevant to this run
+    batch_size = context.run_config["batch-size"]
+    trainloader, valloader = load_data(partition_id, num_partitions, batch_size)
+    local_epochs = context.run_config["local-epochs"]
+    learning_rate = context.run_config["learning-rate"]
+
+    # Return Client instance
+    return FlowerClient(trainloader, valloader, local_epochs, learning_rate).to_client()
+
+
+# Flower ClientApp
+app = ClientApp(client_fn)
