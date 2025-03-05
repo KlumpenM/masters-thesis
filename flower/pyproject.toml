@@ -27,7 +27,7 @@ clientapp = "flower_normal.client:app"
 [tool.flwr.app.config]
 # Server configuration
 # How many server rounds, we are using
-num-server-rounds = 3
+num-server-rounds = 10
 # Fraction of clients used during training: In case of 0.5, half of the clients are used for training
 fraction-fit = 0.02
 # Fraction of clients used during validation: In case of 0.5, half of the clients are used for validation
@@ -35,10 +35,10 @@ fraction-evaluate = 0.02
 
 # Client configuration
 # How many epochs the client is training
-local-epochs = 3
+local-epochs = 5
 # The learning rate for the client
 learning-rate = 0.1
-# The batch size for the client
+# The batch size for the client, this needs to be changed inside of "centralized.py"
 batch-size = 32
 
 [tool.flwr.federations]
