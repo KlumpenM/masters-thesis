@@ -5,8 +5,6 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from flwr_datasets import FederatedDataset
-from flwr_datasets.partitioner import IidPartitioner
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 from torchvision.datasets import CIFAR10
@@ -153,6 +151,7 @@ def load_data():
     trf = Compose((ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))))
     trainset = CIFAR10(root="data", train=True, transform=trf, download=True)
     testset = CIFAR10(root="data", train=False, transform=trf, download=True)
+    print(train.shape(), test.shape())
     return DataLoader(trainset, batch_size=32, shuffle=True), DataLoader(testset, batch_size=32)
 
 
