@@ -9,6 +9,7 @@ from flwr_datasets import FederatedDataset
 from flwr_datasets.partitioner import IidPartitioner
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
+from torchvision.datasets import CIFAR10
 
 
 class Net(nn.Module):
@@ -44,9 +45,9 @@ def set_weights(net, parameters):
 
 fds = None  # Cache FederatedDataset
 
-
-def load_data(partition_id: int, num_partitions: int, batch_size: int):
-    """Load partition CIFAR10 data."""
+"""
+def load_data_orig(partition_id: int, num_partitions: int, batch_size: int):
+    Load partition CIFAR10 data.
     # Only initialize `FederatedDataset` once
     global fds
     if fds is None:
@@ -63,7 +64,7 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
     )
 
     def apply_transforms(batch):
-        """Apply transforms to the partition from FederatedDataset."""
+        Apply transforms to the partition from FederatedDataset.
         batch["img"] = [pytorch_transforms(img) for img in batch["img"]]
         return batch
 
@@ -73,8 +74,8 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
     return trainloader, testloader
 
 
-def train(net, trainloader, valloader, epochs, learning_rate, device):
-    """Train the model on the training set."""
+def train_orig(net, trainloader, valloader, epochs, learning_rate, device):
+    Train the model on the training set.
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
@@ -87,17 +88,22 @@ def train(net, trainloader, valloader, epochs, learning_rate, device):
             criterion(net(images.to(device)), labels.to(device)).backward()
             optimizer.step()
 
+    train_loss, train_acc = test(net, trainloader, device)
+    val_loss, val_acc = test(net, valloader, device)
     val_loss, val_acc = test(net, valloader, device)
 
     results = {
+        "train_loss": train_loss,
+        "train_accuracy": train_acc,
         "val_loss": val_loss,
         "val_accuracy": val_acc,
     }
+    print(results)
     return results
 
 
-def test(net, testloader, device):
-    """Validate the model on the test set."""
+def test_orig(net, testloader, device):
+    Validate the model on the test set.
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss()
     correct, loss = 0, 0.0
@@ -109,5 +115,58 @@ def test(net, testloader, device):
             loss += criterion(outputs, labels).item()
             correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
     accuracy = correct / len(testloader.dataset)
-    loss = loss / len(testloader)
+    loss = loss / len(testloader.dataset)
     return loss, accuracy
+"""
+
+
+def train(net, trainloader, valloader, epochs, learning_rate, device):
+    """Train the model on the training set."""
+    net.to(device)
+    criterion = torch.nn.CrossEntropyLoss().to(device)
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+    for _ in range(epochs):
+        for image, labels in trainloader:
+            optimizer.zero_grad()
+            outputs = net(image.to(device)) # Move the image to the device
+            loss = criterion(outputs, labels.to(device))
+            loss.backward()
+            optimizer.step()
+    
+    train_loss, train_acc = test(net, trainloader, device)
+    val_loss, val_acc = test(net, valloader, device)
+    val_loss, val_acc = test(net, valloader, device)
+
+    results = {
+        "train_loss": train_loss,
+        "train_accuracy": train_acc,
+        "val_loss": val_loss,
+        "val_accuracy": val_acc,
+    }
+    print(results)
+    return results
+
+
+
+def load_data():
+    """ Load partition of the CIFAR10 dataset """
+    trf = Compose((ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))))
+    trainset = CIFAR10(root="data", train=True, transform=trf, download=True)
+    testset = CIFAR10(root="data", train=False, transform=trf, download=True)
+    return DataLoader(trainset, batch_size=32, shuffle=True), DataLoader(testset, batch_size=32)
+
+
+def test(net, testloader, device):
+    net.to(device)
+    criterion = torch.nn.CrossEntropyLoss()
+    correct, total, loss = 0,0,0
+    with torch.no_grad():
+        for images, labels in testloader:
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = net(images)
+            loss += criterion(outputs, labels).item()
+            total += labels.size(0)
+            correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
+    
+    return loss / len(testloader.dataset), correct / total
