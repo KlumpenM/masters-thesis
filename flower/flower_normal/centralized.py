@@ -151,7 +151,6 @@ def load_data():
     trf = Compose((ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))))
     trainset = CIFAR10(root="data", train=True, transform=trf, download=True)
     testset = CIFAR10(root="data", train=False, transform=trf, download=True)
-    print(train.shape(), test.shape())
     return DataLoader(trainset, batch_size=32, shuffle=True), DataLoader(testset, batch_size=32)
 
 
