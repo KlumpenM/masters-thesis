@@ -101,11 +101,16 @@ def test(net, testloader, device):
     return loss, accuracy
 
 
+# Get the learned parameters from the model (specific in PyTorch)
 def get_weights(net):
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 
+# We define it based on PyTorch's model
+# We can change the method, so that we are "only" federating parts of the model (this logic will be here)
 def set_weights(net, parameters):
     params_dict = zip(net.state_dict().keys(), parameters)
+    # We can change it from "tensor" to "from_numpy", this will gives us more flexibility 
+    # in terms of model, that we are using
     state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
     net.load_state_dict(state_dict, strict=True)

@@ -13,6 +13,7 @@ def server_fn(context: Context):
 
     # Initialize model parameters
     ndarrays = get_weights(Net())
+    # Internal convertion of the model parameters to the format used by Flower
     parameters = ndarrays_to_parameters(ndarrays)
 
     # Define strategy
@@ -22,6 +23,7 @@ def server_fn(context: Context):
         min_available_clients=2,
         initial_parameters=parameters,
     )
+    # Define the config (number of rounds)
     config = ServerConfig(num_rounds=num_rounds)
 
     return ServerAppComponents(strategy=strategy, config=config)
