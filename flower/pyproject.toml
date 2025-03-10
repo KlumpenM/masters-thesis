@@ -36,10 +36,6 @@ fraction-evaluate = 0.5
 # Client configuration
 # How many epochs the client is training
 local-epochs = 5
-# The learning rate for the client
-learning-rate = 0.001
-# The batch size for the client, this needs to be changed inside of "centralized.py"
-batch-size = 32
 
 [tool.flwr.federations]
 default = "local-simulation"

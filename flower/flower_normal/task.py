@@ -40,6 +40,9 @@ def load_data(partition_id: int, num_partitions: int):
     # Only initialize `FederatedDataset` once
     global fds
     if fds is None:
+        # We are partitioning the data based on the number of partitions, that we defined in the client file,
+        # But we are extracting them in a IID fashion.
+        # Look at second video from flower, if we want another partitioning strategy
         partitioner = IidPartitioner(num_partitions=num_partitions)
         fds = FederatedDataset(
             dataset="uoft-cs/cifar10",
@@ -49,6 +52,7 @@ def load_data(partition_id: int, num_partitions: int):
     # Divide data on each node: 80% train, 20% test
     partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
     pytorch_transforms = Compose(
+        # We need to normalize CIFAR10, since it is not normalized by default and it's RGB.
         [ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
     )
 
@@ -67,7 +71,7 @@ def train(net, trainloader, epochs, device):
     """Train the model on the training set."""
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.1)
     net.train()
     running_loss = 0.0
     for _ in range(epochs):
@@ -79,7 +83,6 @@ def train(net, trainloader, epochs, device):
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-
     avg_trainloss = running_loss / len(trainloader)
     return avg_trainloss
 
