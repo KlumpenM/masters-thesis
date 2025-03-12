@@ -9,7 +9,7 @@ Since we are with both the flower framework and pfl-research framework and these
 - flwr
 - matplotlib
 - pfl[torch]
-- sklearn
+- scikit-learn
 
 *IMPORTANT*: In order to install `pfl`, the required Python version is 3.10.
 
