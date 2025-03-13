@@ -18,9 +18,24 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     total_examples = sum(num_examples for num_examples, _ in metrics)
     accuracy = sum(accuracies) / total_examples
-
+    print(f"For each client: {metrics}")
+    print(f"Weighted average accuracy: {accuracy}")
     # We are returning the average accuracy of all the clients
     return {"accuracy": accuracy}
+
+"""
+# Define a callback function, that will be called after each round
+def on_fit_config(server_round: int) -> Metrics:
+    # This is a mock up hyperparameter, that we can change based on the round
+    learning_rate = 0.01
+
+    #if server_round > 2:
+    #    learning_rate = 0.005
+
+    return {"learning_rate": learning_rate}
+
+
+"""
 
 def server_fn(context: Context):
     # Read from config
@@ -33,6 +48,8 @@ def server_fn(context: Context):
     # Internal convertion of the model parameters to the format used by Flower
     parameters = ndarrays_to_parameters(ndarrays)
 
+    print("Creating server")
+
     # Define strategy
     strategy = FedAvg(
         fraction_fit=fraction_fit,
@@ -41,6 +58,8 @@ def server_fn(context: Context):
         initial_parameters=parameters,
         # We are using the weighted average function to aggregate the metrics
         evaluate_metrics_aggregation_fn=weighted_average,
+        # Here we are passing the custom callback
+        #on_fit_config_fn=on_fit_config,
     )
     
     # Define the config (number of rounds)

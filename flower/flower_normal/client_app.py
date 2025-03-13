@@ -27,6 +27,7 @@ class FlowerClient(NumPyClient):
             self.net,
             self.trainloader,
             self.local_epochs,
+            #config["learning_rate"],
             self.device,
         )
         return (
@@ -50,6 +51,8 @@ class FlowerClient(NumPyClient):
 def client_fn(context: Context):
     # Load model and data
     net = Net()
+
+    print("Creating client")
     
     # When we are using node_config
     # Num-partitions    = How many clients are there in total

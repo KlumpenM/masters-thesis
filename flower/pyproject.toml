@@ -27,18 +27,18 @@ clientapp = "flower_normal.client_app:app"
 [tool.flwr.app.config]
 # Server configuration
 # How many server rounds, we are using
-num-server-rounds = 10
+num-server-rounds = 50
 # Fraction of clients used during training: In case of 0.5, half of the clients are used for training
-fraction-fit = 0.5
+fraction-fit = 1
 # Fraction of clients used during validation: In case of 0.5, half of the clients are used for validation
-fraction-evaluate = 0.5
+fraction-evaluate = 1
 
 # Client configuration
 # How many epochs the client is training
-local-epochs = 5
+local-epochs = 4
 
 [tool.flwr.federations]
 default = "local-simulation"
 
 [tool.flwr.federations.local-simulation]
-options.num-supernodes = 100
+options.num-supernodes = 8
