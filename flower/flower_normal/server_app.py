@@ -11,17 +11,21 @@ from flower_normal.task import Net, get_weights
 
 # Do the weighted average of the metrics that is sent to the server
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
-    """ A function that aggregates metrics """
-    
-    # Since we are receiving a list of accuracies from the clients
-    # Here m is the accuracy we are getting from the client
-    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
-    total_examples = sum(num_examples for num_examples, _ in metrics)
-    accuracy = sum(accuracies) / total_examples
-    print(f"For each client: {metrics}")
-    print(f"Weighted average accuracy: {accuracy}")
-    # We are returning the average accuracy of all the clients
-    return {"accuracy": accuracy}
+    examples = [num_examples for num_examples, _ in metrics]
+    train_losses = [num_examples * m["train_loss"] for num_examples, m in metrics]
+    train_accuracies = [
+        num_examples * m["train_accuracy"] for num_examples, m in metrics
+    ]
+    val_losses = [num_examples * m["val_loss"] for num_examples, m in metrics]
+    val_accuracies = [num_examples * m["val_accuracy"] for num_examples, m in metrics]
+
+    return {
+        "train_loss": sum(train_losses) / sum(examples),
+        "train_accuracy": sum(train_accuracies) / sum(examples),
+        "val_loss": sum(val_losses) / sum(examples),
+        "val_accuracy": sum(val_accuracies) / sum(examples),
+    }
+
 
 """
 # Define a callback function, that will be called after each round
