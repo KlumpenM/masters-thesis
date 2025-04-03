@@ -51,9 +51,7 @@ class FlowerClient(NumPyClient):
 def client_fn(context: Context):
     # Load model and data
     net = Net()
-
-    print("Creating client")
-    
+        
     # When we are using node_config
     # Num-partitions    = How many clients are there in total
     #   - Num-partitions is equal to "options.num-supernodes" in the config file

@@ -99,14 +99,13 @@ def load_data(partition_id: int, num_partitions: int):
     return trainloader, testloader
 
 
-def train(net, trainloader, epochs, device):
+def train(net, trainloader, valloader, epochs, device):
     """Train the model on the training set."""
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-5)
     net.train()
     running_loss = 0.0
-    print(f"Training for {epochs} epoch(s)...")
     for _ in range(epochs):
         for batch in trainloader:
             images = batch["img"]
@@ -115,9 +114,17 @@ def train(net, trainloader, epochs, device):
             loss = criterion(net(images.to(device)), labels.to(device))
             loss.backward()
             optimizer.step()
-            running_loss += loss.item()
-    avg_trainloss = running_loss / len(trainloader)
-    return avg_trainloss
+
+    train_loss, train_acc = test(net, trainloader, device)
+    val_loss, val_acc = test(net, valloader, device)
+
+    results = {
+        "train_loss": train_loss,
+        "train_accuracy": train_acc,
+        "val_loss": val_loss,
+        "val_accuracy": val_acc,
+    }
+    return results
 
 
 def test(net, testloader, device):
@@ -133,7 +140,6 @@ def test(net, testloader, device):
             loss += criterion(outputs, labels).item()
             correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
     accuracy = correct / len(testloader.dataset)
-    loss = loss / len(testloader)
     return loss, accuracy
 
 

@@ -5,17 +5,17 @@ from flwr.client import ClientApp, NumPyClient
 from flwr.common import Context
 from flwr.client.mod import fixedclipping_mod, secaggplus_mod
 
-import sys
-sys.path.append('../flower/flower_DP')
-from centralized import Net, load_data, get_weights, set_weights, test, train
+from flower_DP.task import Net, get_weights, load_data, set_weights, test, train
 
-# Define Flower Client
+
 class FlowerClient(NumPyClient):
-    def __init__(self, trainloader, testloader) -> None:
+    def __init__(self, trainloader, valloader, local_epochs) -> None:
         self.net = Net()
         self.trainloader = trainloader
-        self.testloader = testloader
+        self.testloader = valloader
+        self.local_epochs = local_epochs
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.net.to(self.device)
 
     def fit(self, parameters, config):
         set_weights(self.net, parameters)
@@ -23,10 +23,10 @@ class FlowerClient(NumPyClient):
             self.net,
             self.trainloader,
             self.testloader,
-            epochs=1,
+            epochs=self.local_epochs,
             device=self.device,
         )
-        return get_weights(self.net), len(self.trainloader.dataset), results
+        return get_weights(self.net), len(self.trainloader.dataset), {"train_loss": results}
 
     def evaluate(self, parameters, config):
         set_weights(self.net, parameters)
@@ -35,11 +35,18 @@ class FlowerClient(NumPyClient):
 
 
 def client_fn(context: Context):
+    # Load model and data
+    net = Net()
+
+
     partition_id = context.node_config["partition-id"]
-    trainloader, testloader = load_data(
-        partition_id=partition_id, num_partitions=context.node_config["num-partitions"]
+    num_partitions = context.node_config["num-partitions"]
+    local_epochs = context.node_config["local-epochs"]
+
+    trainloader, valloader = load_data(
+        partition_id=partition_id, num_partitions=num_partitions
     )
-    return FlowerClient(trainloader, testloader).to_client()
+    return FlowerClient(net, trainloader, valloader, local_epochs).to_client()
 
 
 # Flower ClientApp
