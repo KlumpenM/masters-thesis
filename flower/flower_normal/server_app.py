@@ -9,6 +9,7 @@ from flower_normal.task import Net, get_weights
 
 
 
+"""
 # Do the weighted average of the metrics that is sent to the server
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     examples = [num_examples for num_examples, _ in metrics]
@@ -27,7 +28,6 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     }
 
 
-"""
 # Define a callback function, that will be called after each round
 def on_fit_config(server_round: int) -> Metrics:
     # This is a mock up hyperparameter, that we can change based on the round
@@ -39,10 +39,12 @@ def on_fit_config(server_round: int) -> Metrics:
     return {"learning_rate": learning_rate}
 
 
-"""
 
 def server_fn(context: Context):
     # Read from config
+    print("Server Num-rounds:", context.run_config["num-server-rounds"])
+    
+
     num_rounds = context.run_config["num-server-rounds"]
     fraction_fit = context.run_config["fraction-fit"]
     fraction_evaluate = context.run_config["fraction-evaluate"]
@@ -67,6 +69,44 @@ def server_fn(context: Context):
     )
     
     # Define the config (number of rounds)
+    config = ServerConfig(num_rounds=num_rounds)
+
+    return ServerAppComponents(strategy=strategy, config=config)
+
+
+# Create ServerApp
+app = ServerApp(server_fn=server_fn)
+
+"""
+
+# Define metric aggregation function
+def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
+    # Multiply accuracy of each client by number of examples used
+    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    examples = [num_examples for num_examples, _ in metrics]
+
+    # Aggregate and return custom metric (weighted average)
+    return {"accuracy": sum(accuracies) / sum(examples)}
+
+
+def server_fn(context: Context):
+    """Construct components that set the ServerApp behaviour."""
+
+    # Read from config
+    num_rounds = context.run_config["num-server-rounds"]
+
+    # Initialize model parameters
+    ndarrays = get_weights(Net())
+    parameters = ndarrays_to_parameters(ndarrays)
+
+    # Define the strategy
+    strategy = FedAvg(
+        fraction_fit=1.0,
+        fraction_evaluate=context.run_config["fraction-evaluate"],
+        min_available_clients=2,
+        evaluate_metrics_aggregation_fn=weighted_average,
+        initial_parameters=parameters,
+    )
     config = ServerConfig(num_rounds=num_rounds)
 
     return ServerAppComponents(strategy=strategy, config=config)
