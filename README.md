@@ -40,3 +40,15 @@ pip install torchvision
 ```
 
 Then restart the editor.
+
+
+## Flower "Unable to import module Ray
+This is because ray is only supported for older versions of python, therefore it's recommended to install in a virutal environemnt, where the python versions is 3.10 (We did all the experiments in this version)
+```
+python -m pip install virtualenv
+virtualenv -p python3.10 .venv
+```
+after making a custom virtual environment, you can install the dependencies from above, by either installing it package by package or installing it in the 'flower' folder with:
+```
+pip install -e .
+```
