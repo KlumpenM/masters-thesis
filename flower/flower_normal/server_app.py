@@ -2,6 +2,7 @@
 
 from typing import List, Tuple
 from flwr.common import Context, ndarrays_to_parameters, Metrics
+from flwr.server.history import History # Keeping the correct History import
 from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 from flwr.server.strategy import FedAvg
 # Import from task.py to initialize global model parameters
@@ -71,12 +72,29 @@ def server_fn(context: Context):
     # (typically by simple averaging if they are scalar values). These aggregated fit metrics
     # will appear in the server logs and history without needing a separate fit_metrics_aggregation_fn
     # unless more complex aggregation is required.
+
+
+    # This is for multiple clients
+    # strategy = FedAvg(
+    #     fraction_fit=context.run_config["fraction-fit"],
+    #     fraction_evaluate=context.run_config["fraction-evaluate"],
+    #     min_available_clients=2, # Example: wait for at least 2 clients
+    #     evaluate_metrics_aggregation_fn=weighted_average,
+    #     initial_parameters=initial_model_parameters,
+    # )
+
+    # This is just for a single client
     strategy = FedAvg(
-        fraction_fit=context.run_config["fraction-fit"],
-        fraction_evaluate=context.run_config["fraction-evaluate"],
-        min_available_clients=2, # Example: wait for at least 2 clients
-        evaluate_metrics_aggregation_fn=weighted_average,
+        fraction_fit=1.0,             # Use 100% of available clients (i.e., the single one)
+        fraction_evaluate=1.0,        # Use 100% of available clients for evaluation
+        min_fit_clients=1,            # Ensure the one client is used for fit
+        min_evaluate_clients=1,       # Ensure the one client is used for evaluate
+        min_available_clients=1,      # Allow rounds to start with just one client
+        evaluate_metrics_aggregation_fn=weighted_average, # Correctly handles single client metrics
         initial_parameters=initial_model_parameters,
+        # You might not need to pass fraction_fit/evaluate from run_config anymore
+        # if you are hardcoding to 1.0 here for the single client case.
+        # Or, ensure your run_config for single client also sets these to 1.0.
     )
     
     # ServerConfig defines server-level settings, like the total number of rounds.

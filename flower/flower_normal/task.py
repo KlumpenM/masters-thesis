@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from flwr_datasets import FederatedDataset
-from flwr_datasets.partitioner import IidPartitioner
+from flwr_datasets.partitioner import IidPartitioner, SizePartitioner
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 
@@ -69,12 +69,24 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
     """Load partition CIFAR10 data."""
     # Only initialize `FederatedDataset` once
     global fds
+    # The below code is for IID partitioning. (random)
     if fds is None:
         partitioner = IidPartitioner(num_partitions=num_partitions)
         fds = FederatedDataset(
             dataset="uoft-cs/cifar10",
             partitioners={"train": partitioner},
         )
+
+    # The code below is for size partitioning, so that each client gets the same data across runs
+    # if fds is None:
+    #     size_of_partition = 50_000 / num_partitions;
+    #     arrayOfPartitionsSizes = [int(size_of_partition)] * num_partitions;
+    #     partitioner = SizePartitioner(partition_sizes=arrayOfPartitionsSizes)
+    #     fds = FederatedDataset(
+    #         dataset="uoft-cs/cifar10",
+    #         partitioners={"train": partitioner},
+    #     )
+
     partition = fds.load_partition(partition_id)
     # Divide data on each node: 80% train, 20% test (becomes validation set)
     partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
