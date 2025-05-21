@@ -252,9 +252,12 @@ def train(net, trainloader, valloader, epochs, learning_rate, device):
             criterion(net(images.to(device)), labels.to(device)).backward()
             optimizer.step()
 
+    train_loss, train_acc = test(net, trainloader, device)
     val_loss, val_acc = test(net, valloader, device)
 
     results = {
+        "train_loss": train_loss,
+        "train_accuracy": train_acc,
         "val_loss": val_loss,
         "val_accuracy": val_acc,
     }

@@ -85,6 +85,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
+    print("Metrics:", metrics)
     # Aggregate and return custom metric (weighted average)
     return {"accuracy": sum(accuracies) / sum(examples)}
 
@@ -101,7 +102,7 @@ def server_fn(context: Context):
 
     # Define the strategy
     strategy = FedAvg(
-        fraction_fit=1.0,
+        fraction_fit=context.run_config["fraction-fit"],
         fraction_evaluate=context.run_config["fraction-evaluate"],
         min_available_clients=2,
         evaluate_metrics_aggregation_fn=weighted_average,
