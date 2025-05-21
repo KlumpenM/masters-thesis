@@ -83,11 +83,12 @@ app = ServerApp(server_fn=server_fn)
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    losses = [num_examples * m["loss"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
-    print("Metrics:", metrics)
+    print("metrics:", metrics)
     # Aggregate and return custom metric (weighted average)
-    return {"accuracy": sum(accuracies) / sum(examples)}
+    return {"accuracy": sum(accuracies) / sum(examples), "loss": sum(losses) / sum(examples)}
 
 
 def server_fn(context: Context):

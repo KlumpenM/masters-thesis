@@ -105,7 +105,7 @@ class FlowerClient(NumPyClient):
         set_weights(self.net, parameters)
         loss, accuracy = test(self.net, self.valloader, self.device)
         # The loss and accuracy here is tieed to the "weighted average" function in server_app.py
-        return loss, len(self.valloader.dataset), {"accuracy": accuracy}
+        return loss, len(self.valloader.dataset), {"accuracy": accuracy, "loss": loss}
 
 
 def client_fn(context: Context):
