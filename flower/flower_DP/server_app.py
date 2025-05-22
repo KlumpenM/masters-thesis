@@ -5,10 +5,9 @@ from typing import List, Tuple
 from flower_DP.task import Net, get_weights
 
 from flwr.common import Context, Metrics, ndarrays_to_parameters
-from flwr.server import Driver, LegacyContext, ServerApp, ServerConfig
+from flwr.server import Grid, LegacyContext, ServerApp, ServerConfig
 from flwr.server.strategy import DifferentialPrivacyClientSideFixedClipping, FedAvg
 from flwr.server.workflow import DefaultWorkflow, SecAggPlusWorkflow
-
 
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     examples = [num_examples for num_examples, _ in metrics]
@@ -31,7 +30,7 @@ app = ServerApp()
 
 
 @app.main()
-def main(driver: Driver, context: Context) -> None:
+def main(grid: Grid, context: Context) -> None:
 
     # Initialize global model
     model_weights = get_weights(Net())
@@ -46,7 +45,9 @@ def main(driver: Driver, context: Context) -> None:
     strategy = FedAvg(
         fraction_fit=fraction_fit,
         fraction_evaluate=fraction_evaluate,
-        min_fit_clients=2,
+        min_fit_clients=context.run_config["num-sampled-clients"],
+        min_evaluate_clients=context.run_config["num-sampled-clients"],
+        min_available_clients=context.run_config["num-sampled-clients"],
         fit_metrics_aggregation_fn=weighted_average,
         initial_parameters=parameters,
     )
@@ -75,8 +76,10 @@ def main(driver: Driver, context: Context) -> None:
         fit_workflow=SecAggPlusWorkflow(
             num_shares=context.run_config["num-shares"],
             reconstruction_threshold=context.run_config["reconstruction-threshold"],
+            modulus_range=2**24,
+            quantization_range=(2**15)-1,
         )
     )
 
     # Execute
-    workflow(driver, context)
+    workflow(grid, context)

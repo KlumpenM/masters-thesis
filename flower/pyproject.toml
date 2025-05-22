@@ -3,15 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "flower_normal"
+name = "flower_DP"
 version = "1.0.0"
-description = "Federated Learning with PyTorch and Flower (Quickstart Example)"
+description = "Central Differential Privacy and Secure Aggregation in Flower"
 license = "Apache-2.0"
 dependencies = [
-    "flwr[simulation]>=1.18.0",
+    "flwr[simulation]>=1.15.2",
     "flwr-datasets[vision]>=0.5.0",
-    "torch==2.6.0",
-    "torchvision==0.21.0",
+    "torch==2.5.1",
+    "torchvision==0.20.1",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -21,31 +21,32 @@ packages = ["."]
 publisher = "ruben"
 
 [tool.flwr.app.components]
-serverapp = "flower_normal.server_app:app"
-clientapp = "flower_normal.client_app:app"
+serverapp = "flower_DP.server_app:app"
+clientapp = "flower_DP.client_app:app"
 
 [tool.flwr.app.config]
 # Server configuration
-# How many server rounds, we are using
 #num-server-rounds = 50
-num-server-rounds = 1
-
-# Fraction of clients used during training: In case of 0.5, half of the clients are used for training
+num-server-rounds = 2
 fraction-fit = 1
-# Fraction of clients used during validation: In case of 0.5, half of the clients are used for validation
 fraction-evaluate = 1
 
 # Client configuration
-# How many epochs the client is training
-#local-epochs = 4
-local-epochs = 25
-learning-rate = 0.01
+local-epochs = 4
 batch-size = 32
-weight-decay = 0.00001
+learning-rate = 0.01
+
+# Parameters for the DP
+noise-multiplier = 0.2
+clipping-norm = 10
+num-sampled-clients = 4
+# Parameters for the SecAgg+ protocol
+num-shares = 7
+reconstruction-threshold = 4
+
 
 [tool.flwr.federations]
-default = "local-simulation"
+default = "local-simulation-gpu"
 
-[tool.flwr.federations.local-simulation]
-#options.num-supernodes = 8
-options.num-supernodes = 1
+[tool.flwr.federations.local-simulation-gpu]
+options.num-supernodes = 4

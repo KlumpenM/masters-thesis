@@ -91,7 +91,7 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
     # Divide data on each node: 80% train, 20% test (becomes validation set)
     partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
     pytorch_transforms = Compose(
-        [ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        [ToTensor(), Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]
     )
 
     def apply_transforms(batch):
@@ -100,9 +100,7 @@ def load_data(partition_id: int, num_partitions: int, batch_size: int):
         return batch
 
     partition_train_test = partition_train_test.with_transform(apply_transforms)
-    trainloader = DataLoader(
-        partition_train_test["train"], batch_size=batch_size, shuffle=True
-    )
+    trainloader = DataLoader(partition_train_test["train"], batch_size=batch_size, shuffle=True)
     # This 'testloader' is used as the validation set for the client
     testloader = DataLoader(partition_train_test["test"], batch_size=batch_size)
     return trainloader, testloader
@@ -131,12 +129,12 @@ def train(net, trainloader, valloader, epochs, learning_rate, device):
     """Train the model on the training set."""
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=1e-5)
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
-            images = batch["img"]
-            labels = batch["label"]
+            images = batch["img"].to(device)
+            labels = batch["label"].to(device)
             optimizer.zero_grad()
             loss = criterion(net(images.to(device)), labels.to(device))
             loss.backward()
